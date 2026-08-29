@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: "Unit tests · Python ${{ matrix.python-version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Syntax check scripts/scaffold_project.py
+        run: |
+          python -c "import ast; ast.parse(open('scripts/scaffold_project.py',encoding='utf-8').read()); print('syntax OK')"
+
+      - name: Validate SKILL.md frontmatter + references 链接完整性
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          root = Path('.')
+          skill = (root/'SKILL.md').read_text(encoding='utf-8')
+          assert skill.startswith('---'), 'SKILL.md frontmatter 必须以 --- 开头'
+          assert 'name:' in skill and 'description:' in skill, '缺少必填 frontmatter'
+          desc = next((ln for ln in skill.splitlines() if ln.lstrip().startswith('description:')), '')
+          assert len(desc) >= 40, 'description 必须同时描述「做什么 + 什么时候用」'
+          for must in ('harness.md','memory.md','development-principles.md'):
+              assert (root/'references'/must).is_file(), f'缺少 references/{must}'
+          print('SKILL 元数据 + references 齐全 ✅')
+          PY
+
+      - name: CLI dry-run smoke test (scaffold + validate round-trip)
+        run: |
+          set -e
+          OUT=$(mktemp -d)
+          python scripts/scaffold_project.py scaffold \
+            --name "gh-actions-demo" \
+            --brief "一个给 CI 冒烟用的个人站" \
+            --modules "首页展示,文章列表,关于页" \
+            --deploy "本地可跑即可" \
+            --output "$OUT" \
+            --json > /tmp/scaffold.json
+          python -c "import json,sys; d=json.load(open('/tmp/scaffold.json')); assert d['ok'], d; print('scaffold OK @', d['project_dir'])"
+          PROJ_DIR=$(python -c "import json; print(json.load(open('/tmp/scaffold.json'))['project_dir'])")
+          python scripts/scaffold_project.py validate "$PROJ_DIR" --json > /tmp/validate.json
+          python -c "import json; d=json.load(open('/tmp/validate.json')); assert d['ok'], d; print('validate OK:', len(d['checks']), 'checks')"
+          python scripts/scaffold_project.py scaffold \
+            --name "gh-actions-demo" \
+            --brief "skip" \
+            --output "$OUT" \
+            --json > /tmp/scaffold2.json
+          python -c "import json; d=json.load(open('/tmp/scaffold2.json')); assert len(d['created'])==0 and len(d['skipped'])>=12, d; print('idempotent OK: skipped=', len(d['skipped']))"
+
+      - name: Capabilities matrix sanity
+        run: |
+          python scripts/scaffold_project.py capabilities > /tmp/caps.json
+          python - <<'PY'
+          import json
+          rows = json.load(open('/tmp/caps.json'))
+          need = {'subagents','memory_system','brainstorm_skill','aesthetic_skill','web_fetch'}
+          got = {r['capability'] for r in rows}
+          assert need <= got, f'missing caps: {need - got}'
+          print(f'capabilities OK: {len(rows)} rows')
+          PY
+
+      - name: pytest with coverage
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          pytest tests/ -v \
+            --cov=scripts \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=60
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-py${{ matrix.python-version }}
+          path: coverage.xml
+          if-no-files-found: ignore
