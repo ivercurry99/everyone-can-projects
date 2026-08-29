@@ -1,0 +1,53 @@
+{
+  "skill_name": "everyone-can-projects",
+  "evals": [
+    {
+      "id": 1,
+      "name": "vague-idea-to-planning",
+      "prompt": "帮我做个个人网站，我想做个人网站作为别人了解我的入口，别的还没想好",
+      "expected_output": "不直接写代码，先用头脑风暴式提问明确需求，然后产出立项说明、功能清单、项目管理档案、推进计划、技术栈选型、项目架构、项目级工程规范共 7 份文档",
+      "files": [],
+      "expectations": [
+        "动手写代码前先做需求明确",
+        "产出立项说明、功能清单、推进计划等规划文档",
+        "信息不全时用默认值补齐，不反复追问"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "one-feature-at-a-time",
+      "prompt": "帮我做一个包含用户系统、文章系统、评论系统、支付系统、后台管理的网站",
+      "expected_output": "不一次实现所有模块，拆成独立 feature，每次只做一个，按五角色 + 门禁小步迭代",
+      "files": [],
+      "expectations": [
+        "把大系统拆成独立 feature",
+        "每个 feature 走完五道门禁再做下一个",
+        "测试员和开发者不是同一个角色"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "resume-without-guessing",
+      "prompt": "接着做上次的项目",
+      "expected_output": "先读进度文件定位进度，用两三句话报告当前进度、关键决定、下一步；没有记录的内容明确说「没有记录」",
+      "files": [],
+      "expectations": [
+        "先读进度文件而不是凭印象猜",
+        "报告当前进度和下一步行动",
+        "没有记录的内容明确说没有"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "release-review-gate",
+      "prompt": "项目准备发版了",
+      "expected_output": "先问用户是否需要发版评审会，需要则设置多个评审角色 + 集成评估师互相挑刺质疑，team leader 不参与辩论，最终敲定是否可以发版",
+      "files": [],
+      "expectations": [
+        "发版前先问用户是否需要评审会",
+        "多角色互相挑刺质疑",
+        "集成评估师汇总、team leader 敲定，两者分开"
+      ]
+    }
+  ]
+}
