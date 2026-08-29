@@ -207,5 +207,4 @@ pytest tests/ -v --cov=scripts --cov-report=term-missing --cov-fail-under=60
 - 版本：1.0.0
 - 作者：ivercurry99
 - 协议：[MIT](./LICENSE)
-- 邮箱：ivercurry99@gmail.com
 - 发布后优化（v1.0.0 相对初始版本）：**全中文本地化**；新增 scaffold/validate/capabilities 三件套脚本；新增降级策略 / Prompt 锁死 / 适配矩阵 3 篇 references；新增 CI（py3.10~3.12）+ pytest 回归红线 R1~R9。
