@@ -3,7 +3,7 @@ name: everyone-can-projects
 description: 帮助小白用户用一句提示词快速 vibe coding 一个完整项目。自动处理需求明确、Harness 工程规范（五角色分工、五道门禁、文件交接）、进度记忆、迭代开发、质量打磨、版本管理和部署，用户只需说"我想做什么"。当用户说"帮我做个项目/网站/App""vibe coding""我想做一个XXX"或描述了一个想做的项目但不知从何下手时使用。不要用于单个小功能修改、纯技术咨询、或已有成熟开发流程的团队协作。
 license: MIT
 version: 1.0.0
-author: 姚中文 (ivercurry99)
+author: ivercurry99
 compatibility: 核心流程只依赖「读写文件、提问、执行命令」三种通用能力，不依赖任何特定 Agent 宿主的专有功能。子智能体、记忆系统、特定技能均为可选增强，缺失时自动降级到等价方案；无论 S/A/B/C 任何模型档位都能跑出稳定结果。
 triggers:
   - "帮我做个项目"
@@ -123,6 +123,6 @@ triggers:
 ## 版本与作者
 
 - 版本：1.0.0
-- 作者：姚中文 (ivercurry99)
+- 作者：ivercurry99
 - 协议：MIT
 - 升级兼容：新增脚本与 references，对已有使用方式 100% 向后兼容。
