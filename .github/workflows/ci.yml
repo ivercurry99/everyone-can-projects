@@ -47,7 +47,11 @@ jobs:
           assert 'name:' in skill and 'description:' in skill, '缺少必填 frontmatter'
           desc = next((ln for ln in skill.splitlines() if ln.lstrip().startswith('description:')), '')
           assert len(desc) >= 40, 'description 必须同时描述「做什么 + 什么时候用」'
-          for must in ('harness.md','memory.md','development-principles.md'):
+          # references 目录文件齐全
+          for must in (
+              'harness.md','memory.md','development-principles.md',
+              'fallback-strategy.md','prompt-engineering.md','model-agent-matrix.md',
+          ):
               assert (root/'references'/must).is_file(), f'缺少 references/{must}'
           print('SKILL 元数据 + references 齐全 ✅')
           PY
@@ -67,6 +71,7 @@ jobs:
           PROJ_DIR=$(python -c "import json; print(json.load(open('/tmp/scaffold.json'))['project_dir'])")
           python scripts/scaffold_project.py validate "$PROJ_DIR" --json > /tmp/validate.json
           python -c "import json; d=json.load(open('/tmp/validate.json')); assert d['ok'], d; print('validate OK:', len(d['checks']), 'checks')"
+          # 幂等：再跑一次 validate，不应有新建
           python scripts/scaffold_project.py scaffold \
             --name "gh-actions-demo" \
             --brief "skip" \
@@ -94,7 +99,7 @@ jobs:
             --cov=scripts \
             --cov-report=term-missing \
             --cov-report=xml:coverage.xml \
-            --cov-fail-under=60
+            --cov-fail-under=70
 
       - name: Upload coverage artifact
         if: always()

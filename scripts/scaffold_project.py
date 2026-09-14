@@ -17,7 +17,7 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -74,6 +74,7 @@ class ProjectIntent:
     reference: str
     deploy: str
     extra: str
+    tech_stack_hint: str
 
     @classmethod
     def from_user(
@@ -84,6 +85,7 @@ class ProjectIntent:
         reference: str = "",
         deploy: str = "",
         extra: str = "",
+        tech_stack_hint: str = "",
     ) -> "ProjectIntent":
         name = _slugify(project_name) or "my-project"
         modules = [m.strip() for m in (core_modules or "").split(",") if m.strip()]
@@ -96,6 +98,7 @@ class ProjectIntent:
             reference=reference.strip(),
             deploy=deploy.strip() or DEFAULTS["deploy"],
             extra=extra.strip(),
+            tech_stack_hint=tech_stack_hint.strip() or DEFAULTS["tech_stack_hint"],
         )
 
 
@@ -207,7 +210,7 @@ def render_doc_roadmap(it: ProjectIntent) -> str:
 
 
 def render_doc_tech_stack(it: ProjectIntent) -> str:
-    hint = DEFAULTS["tech_stack_hint"]
+    hint = it.tech_stack_hint
     return f"""# 05 · 技术栈选型（Tech Stack）
 
 > 用户选型暗示：`{hint}`。以下为通用默认，架构师在阶段 1 可按实际需求调整（需更新本文件 + 在 PROGRESS 记录原因）。
@@ -412,6 +415,7 @@ def scaffold(
 class ValidationReport:
     project_dir: Path
     checks: List[Dict[str, Any]]
+    warnings: List[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -422,6 +426,7 @@ class ValidationReport:
             "project_dir": str(self.project_dir),
             "ok": self.ok,
             "checks": self.checks,
+            "warnings": self.warnings,
         }
 
 
@@ -467,24 +472,18 @@ def validate(project_dir: Path) -> ValidationReport:
     else:
         add("PROGRESS.md 含续做锚点", False, "文件不存在")
 
-    # 5. 文档中无硬编码的高敏感字段（黑名单：裸手机号/邮箱/密钥等）
-    sensitive_hits: List[str] = []
-    secret_pattern = re.compile(r"(sk-[\w-]{10,}|AKIA[\w]{12,}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})")
+    # 5. 敏感凭据启发式：只告警不拦截（占位邮箱/示例密钥是合法场景，误伤硬失败不划算）
+    warnings: List[str] = []
+    secret_pattern = re.compile(r"(sk-[\w-]{10,}|AKIA[\w]{12,}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})")
     for p in list(project_dir.rglob("*.md"))[:200]:
         try:
             text = p.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
         for m in secret_pattern.findall(text):
-            # 示例中邮箱可能是占位的，这里只是告警，不算硬失败
-            sensitive_hits.append(f"{p.relative_to(project_dir)}: {m[:60]}")
-    add(
-        "未检测到敏感凭据（启发式）",
-        len(sensitive_hits) == 0,
-        "OK" if not sensitive_hits else "疑似敏感字段（仅告警，需人工复核）：\n  - " + "\n  - ".join(sensitive_hits[:5]),
-    )
+            warnings.append(f"{p.relative_to(project_dir)}: {m[:60]}")
 
-    return ValidationReport(project_dir=project_dir, checks=checks)
+    return ValidationReport(project_dir=project_dir, checks=checks, warnings=warnings)
 
 
 # ---------------------------------------------------------------------------
@@ -499,6 +498,7 @@ def _cmd_scaffold(args: argparse.Namespace) -> int:
         reference=args.reference,
         deploy=args.deploy,
         extra=args.extra,
+        tech_stack_hint=args.tech_stack,
     )
     out = Path(args.output).resolve()
     result = scaffold(intent, output_root=out, force=args.force)
@@ -517,8 +517,7 @@ def _cmd_scaffold(args: argparse.Namespace) -> int:
             print("错误：")
             for x in result.errors:
                 print(f"  ! {x}")
-            return 2
-    return 0
+    return 2 if result.errors else 0
 
 
 def _cmd_validate(args: argparse.Namespace) -> int:
@@ -531,6 +530,10 @@ def _cmd_validate(args: argparse.Namespace) -> int:
         for c in report.checks:
             mark = "✅" if c["passed"] else "❌"
             print(f"  {mark} {c['name']} — {c['detail']}")
+        if report.warnings:
+            print(f"  ⚠️ 敏感字段告警（{len(report.warnings)} 项，建议人工复核）：")
+            for w in report.warnings[:5]:
+                print(f"    - {w}")
     return 0 if report.ok else 1
 
 
@@ -552,6 +555,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--reference", default="", help="参考网站 / 风格（可选）")
     s.add_argument("--deploy", default="", help="部署要求（可选）")
     s.add_argument("--extra", default="", help="其他补充（可选）")
+    s.add_argument("--tech-stack", default="", help="技术栈暗示（可选），如 Vite + Vue3")
     s.add_argument("--output", default=str(Path.cwd()), help="输出根目录，默认 cwd")
     s.add_argument("--force", action="store_true", help="覆盖已有文件（默认只补缺失）")
     s.add_argument("--json", action="store_true", help="以 JSON 输出结果")
@@ -569,6 +573,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 if __name__ == "__main__":
+    # Windows 重定向到文件（cp936 等）时 ✅/❌/中文 不至于直接崩
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="backslashreplace")
     parser = build_parser()
     args = parser.parse_args()
     sys.exit(args.func(args))

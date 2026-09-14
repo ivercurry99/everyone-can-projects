@@ -1,8 +1,8 @@
-# everyone-can-projects · 把一段想法变成带文档与自检流程的项目目录
+# everyone-can-projects · 让小白也能 vibe coding 一个完整项目
 
-> 输入一段需求说明，脚本会建立项目目录、拆分执行步骤、记录处理进度并运行自检。说明信息没有写全的时候，脚本会给出默认假设，不会直接中止。
+> **一句话**：你只说「我想做什么」，剩下的——需求明确、工程质量、进度记忆、版本管理、部署——**全部自动包圆**。
 >
-> 核心流程只涉及文件读写与提问，在不同的大模型或编程助手里运行时，缺少的能力都有对应的处理方式。
+> 不需要懂记忆管理、项目流程、子智能体这些概念；**不管你用的是大模型还是本地小模型、是 TRAE 还是别的 Agent 宿主，都能跑出稳定结果**。
 
 <p align="center">
   <strong>
@@ -146,7 +146,7 @@ my-personal-site/
 | 脚本 / 命令 | 做什么 |
 |---|---|
 | `python scripts/scaffold_project.py scaffold ...` | 生成「7 份文档 + phases/ + PROGRESS.md」标准骨架；默认幂等（不覆盖）；`--force` 才覆盖。 |
-| `python scripts/scaffold_project.py validate <dir>` | 校验项目是否满足所有鲁棒性红线（7 文档 / 4 phases / PROGRESS 锚点 / 敏感字段启发式）。 |
+| `python scripts/scaffold_project.py validate <dir>` | 校验项目是否满足所有鲁棒性红线（7 文档 / 4 phases / PROGRESS 锚点）；敏感凭据启发式只告警不拦截。 |
 | `python scripts/scaffold_project.py capabilities` | 输出「能力 → 降级方案」JSON 矩阵，供多 Agent 编排层自动选路。 |
 
 ---
@@ -182,7 +182,7 @@ CI 配置：[.github/workflows/ci.yml](.github/workflows/ci.yml)，在 Python 3.
 
 ```shell
 pip install -r requirements.txt
-pytest tests/ -v --cov=scripts --cov-report=term-missing --cov-fail-under=60
+pytest tests/ -v --cov=scripts --cov-report=term-missing --cov-fail-under=70
 ```
 
 ---
