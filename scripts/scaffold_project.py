@@ -46,7 +46,7 @@ REQUIRED_PHASES: Tuple[str, ...] = (
 CAPABILITY_FALLBACK: Dict[str, str] = {
     "subagents": "不支持多 Agent 并行 → 单人按角色串行切换，门禁一项都不能少。",
     "memory_system": "没有宿主记忆系统 → 使用项目内 PROGRESS.md 作为唯一事实来源。",
-    "brainstorm_skill": "没有头脑风暴技能 → 用等价开放式提问逐项澄清。",
+    "brainstorm_skill": "没有 superpowers 头脑风暴技能 → 改用等价的开放式提问逐项澄清。",
     "aesthetic_skill": "没有去 AI 味技能 → 人工逐项检查：通用占位符 / 模板套话 / 语气一致性。",
     "web_fetch": "没有网络能力 → 跳过【复用到 GitHub 开源方案】环节，直接按本地常识选型。",
 }
